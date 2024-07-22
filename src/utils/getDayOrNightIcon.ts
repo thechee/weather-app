@@ -7,7 +7,6 @@ export function getDayOrNightIcon(
   const hour = new Date(dateTimeString).getHours();
   const sunriseHour = new Date(sunrise * 1000).getHours(); // Convert to milliseconds and get hours
   const sunsetHour = new Date(sunset * 1000).getHours();
-  console.log(hour, sunriseHour, sunsetHour);
 
   const isDayTime = hour >= sunriseHour && hour <= sunsetHour;
   return isDayTime
