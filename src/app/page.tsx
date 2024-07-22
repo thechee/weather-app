@@ -13,6 +13,9 @@ import WeatherDetails from "@/components/WeatherDetails";
 import { metersToKilometers } from "@/utils/metersToKilometers";
 import { convertWindSpeed } from "@/utils/convertWindSpeed";
 import ForecastWeatherDetail from "@/components/ForecastWeatherDetail";
+import { useAtom } from "jotai";
+import { placeAtom } from "./atom";
+import { useEffect } from "react";
 
 
 interface WeatherData {
@@ -86,19 +89,39 @@ interface Coord {
 
 
 export default function Home() {
-  const { isLoading, error, data } = useQuery<WeatherData>(
+  const [place, setPlace] = useAtom(placeAtom);
+
+  const { isLoading, error, data, refetch } = useQuery<WeatherData>(
     'repoData', 
     async () => {
       const { data } = await axios.get(
-        `https://api.openweathermap.org/data/2.5/forecast?q=Oakland,CA,USA&APPID=${process.env.NEXT_PUBLIC_WEATHER_KEY}&cnt=40`
+        `https://api.openweathermap.org/data/2.5/forecast?q=${place}&APPID=${process.env.NEXT_PUBLIC_WEATHER_KEY}&cnt=40`
       );
       return data;
     }
   )
 
+  useEffect(() => {
+    refetch()
+  }, [place])
+
   const firstData = data?.list[0]
-  console.log(data)
-  
+
+  const uniqueDates = [
+    ...new Set(
+      data?.list.map(
+        entry => new Date(entry.dt * 1000).toISOString().split('T')[0]
+      ) 
+    )
+  ]
+
+  const firstDataForEachDate = uniqueDates.map(date => {
+    return data?.list.find(entry => {
+      const entryDate = new Date(entry.dt * 1000).toISOString().split('T')[0];
+      const entryTime = new Date(entry.dt * 1000).getHours();
+      return entryDate === date && entryTime >= 6;
+    })
+  })
 
   if (isLoading) return (
     <div className="flex items-center min-h-screen justify-center">
@@ -165,9 +188,25 @@ export default function Home() {
         </section>
         <section className="flex w-full flex-col gap-4">
           <p className="text-2xl">Forecast <span className="text-sm">7 days</span></p>
-          <ForecastWeatherDetail 
-
-          />
+          {firstDataForEachDate.map((item, index) => (
+            <ForecastWeatherDetail
+              key={index}
+              description={item?.weather[0].description ?? ""}
+              feels_like={item?.main.feels_like ?? 0}
+              temp={item?.main.temp ?? 0}
+              temp_max={item?.main.temp_max ?? 0}
+              temp_min={item?.main.temp_min ?? 0}
+              weatherIcon={item?.weather[0].icon ?? ""}
+              date={format(parseISO(item?.dt_txt ?? ''), 'MM-dd')}
+              day={format(parseISO(item?.dt_txt ?? ''), 'EEEE')}
+              airPressure={`${item?.main.pressure} hPa`}
+              humidity={`${item?.main.humidity}%`}
+              sunrise={format(fromUnixTime(data?.city.sunrise ?? 0), 'h:mm a')}
+              sunset={format(fromUnixTime(data?.city.sunset ?? 0), 'h:mm a')}
+              visibility={`${metersToKilometers(item?.visibility ?? 1000)}`}
+              windSpeed={convertWindSpeed(item?.wind.speed ?? 0)}
+            />
+          ))}
         </section>
       </main>
     </div>
