@@ -8,6 +8,8 @@ import { format, parseISO } from "date-fns";
 import Image from "next/image";
 import { useQuery } from "react-query";
 import { FaTemperatureArrowDown, FaTemperatureArrowUp } from "react-icons/fa6";
+import WeatherIcon from "@/components/WeatherIcon";
+import { getDayOrNightIcon } from "@/utils/getDayOrNightIcon";
 
 
 interface WeatherData {
@@ -91,6 +93,7 @@ export default function Home() {
     }
   )
 
+  console.log(data)
   const firstData = data?.list[0]
 
   if (isLoading) return (
@@ -130,6 +133,7 @@ export default function Home() {
                     className="flex flex-col items-center justify-between gap-2 text-xs font-semibold"
                   >
                     <p className="whitespace-nowrap">{format(parseISO(item.dt_txt), 'h:mm a')}</p>
+                    <WeatherIcon iconName={getDayOrNightIcon(item.weather[0].icon, data.city.sunrise, data.city.sunset, item.dt_txt)} />
                     <p>{convertKelvinToCelcius(item?.main.temp ?? 0)}°C</p>
                   </div>
                 ))}
